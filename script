@@ -1,0 +1,95 @@
+var spreadsheet = SpreadsheetApp.openById("1v65fo4XZ4Wz57_12WT_PbupB8YKCTgfQZRTv3bOklSI");
+
+function Authenticate(userName, password) {
+  var dbSheet = spreadsheet.getSheets()[1];
+  var searchRow = 2
+  while (dbSheet.getRange("A" + searchRow.toString()).getValue().length > 2) {
+    if (dbSheet.getRange("A" + searchRow.toString()).getValue() == userName && dbSheet.getRange("B" + searchRow.toString()).getValue() == password) {
+      return searchRow;
+    }
+    searchRow += 1;
+  }
+  return false;
+}
+
+function processFormResponse() {
+  var dbSheet = spreadsheet.getSheets()[1];
+
+  var form = FormApp.getActiveForm();
+  var responses = form.getResponses();
+  var latestResponse = responses[responses.length - 1];
+  var itemResponses = latestResponse.getItemResponses();
+
+  var userName = itemResponses[0].getResponse();
+  var password = itemResponses[1].getResponse();
+
+  var result = Authenticate(userName, password);
+  if (result == false) {
+    return;
+  } //if reached this point, authentication is successful
+
+  var choice = itemResponses[2].getResponse();
+  var assignmentName = itemResponses[3].getResponse();
+  var row = result;
+  var column = "C";
+
+  while (dbSheet.getRange(column + "1").getValue() != assignmentName) {
+    var num = column.charCodeAt(0);
+    num += 1;
+    column = String.fromCharCode(num);
+  }
+
+  if (choice == "Upload Assignment Image") {
+    var link = itemResponses[4].getResponse();
+    dbSheet.getRange(column + row.toString()).setValue("https://drive.google.com/open?id=" + link);
+    notifyTeacherOfStudentSubmission(userName,assignmentName);
+  }
+  else {
+    var gradeColumn = String.fromCharCode(column.charCodeAt(0) + 1);
+    var remarksColumn = String.fromCharCode(column.charCodeAt(0) + 4);
+    var grade = dbSheet.getRange(gradeColumn + row.toString()).getValue();
+    var remarks = dbSheet.getRange(remarksColumn + row.toString()).getValue();
+    notifyStudentOfAssignmentGrades(assignmentName,grade,remarks);
+  }
+  //console.log(itemResponses[4].getResponse());
+}
+
+function assignImage() {
+
+}
+
+function testing() {
+  var responseSheet = spreadsheet.getSheets()[0];
+  //console.log(responseSheet.getRange("A2").getValue());
+  var column = "A";
+  console.log(String.fromCharCode(column.charCodeAt(0) + 1));
+}
+
+function notifyStudentOfAssignmentGrades(assignmentName, grade, remarks) {
+  var recipient = "pipi.otw@gmail.com"; // Replace with the recipient's email address
+  var subject = "Your grades for " + assignmentName;
+  var body = "You got " + grade + "\n" + "Remarks: " + remarks ;
+
+  // Send email
+  GmailApp.sendEmail(recipient, subject, body);
+}
+
+function notifyTeacherOfStudentSubmission(studentID, assignmentName) {
+  var recipient = "pipi.otw@gmail.com"; // Replace with the recipient's email address
+  var subject = "Student Submission";
+  var body = "Student " + studentID + " has submitted for " + assignmentName;
+
+  // Send email
+  GmailApp.sendEmail(recipient, subject, body);
+}
+
+
+
+
+
+
+
+
+
+
+
